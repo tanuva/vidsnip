@@ -20,7 +20,7 @@ class SnipSection(Enum):
 
 def run_or_simulate(cmd, simulate):
     if simulate:
-        print(" ".join(cmd))
+        print("\t" + " ".join(cmd))
         return (True, None)
     else:
         try:
@@ -169,7 +169,7 @@ def snip(vfile, outfile, start, duration, loudnormParams, simulate):
 
 def tag(filepath, metadata, track_num, track_count, title, simulate):
     if simulate:
-        print("Writing tags: {title}".format(title=title))
+        print(f"\tTagging '{title}'")
         return
 
     file = MP3(filepath)
@@ -226,7 +226,7 @@ def main():
         end = tracks[i + 1][0]
         outfile = f"{padded_track_num} {metadata['Artist']} - {title}.mp3"
 
-        print("{0}/{1} Snipping '{2}'".format(track_num, track_count, title))
+        print("{0}/{1} Snipping '{2}'".format(padded_track_num, track_count, title))
         if not snip(args.video,
                     outfile,
                     start,
