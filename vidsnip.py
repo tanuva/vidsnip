@@ -135,7 +135,7 @@ def normalize_first_pass(vfile, simulate):
         print("ffmpeg says:\n", output)
 
 
-def snip(vfile, outfile, start, duration, loudnormParams, simulate):
+def snip(vfile, outfile, start, duration, loudnormParams, fade_in, fade_out, simulate):
     loudnormParamsStr = None
     if loudnormParams:
         loudnormParamsStr = "loudnorm=I=-6:LRA=4.5:tp=-2:measured_I={0}:measured_LRA={1}:measured_tp={2}:measured_thresh={3}:offset={4}".format(
@@ -161,6 +161,13 @@ def snip(vfile, outfile, start, duration, loudnormParams, simulate):
 
     if loudnormParams:
         cmd += ["-af", loudnormParamsStr]
+
+    if fade_in:
+        cmd += ["-af", f"afade=in:st=0:d={fade_in}"]
+
+    if fade_out:
+        fade_out_start_seconds = int((duration).total_seconds() - fade_out)
+        cmd += ["-af", f"afade=out:st={fade_out_start_seconds}:d={fade_out}"]
 
     cmd += [outfile]
 
@@ -194,10 +201,9 @@ def parse_args():
                         help="Limit processing to comma-separated list of track numbers (2,3,5)")
     parser.add_argument("-n", "--normalize", default=False, action="store_true",
                         help="Normalize volume of processed audio tracks (experimental)")
-    a
-    parser.add_argument("--fade-in", default=None, action="store",
+    parser.add_argument("--fade-in", default=None, action="store", type=int,
                         help="Fade into the first track (seconds)")
-    parser.add_argument("--fade-out", default=None, action="store",
+    parser.add_argument("--fade-out", default=None, action="store", type=int,
                         help="Fade out of the last track (seconds)")
     return parser.parse_args()
 
@@ -255,6 +261,8 @@ def main():
                     start,
                     end - start,
                     loudnormParams,
+                    args.fade_in if track_num == 1 else None,
+                    args.fade_out if track_num == track_count else None,
                     args.simulate):
             break
         tag(outfile, metadata, i + 1, track_count, title, args.simulate)
