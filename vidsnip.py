@@ -190,8 +190,8 @@ def parse_args():
                         help="The video file to split")
     parser.add_argument("-s", "--simulate", default=False, action="store_true",
                         help="Only prints the ffmpeg calls that would be done")
-    parser.add_argument("-l", "--limit", default=None, action="store", type=int,
-                        help="Limit processing to n tracks")
+    parser.add_argument("-t", "--tracks", default=None, action="store",
+                        help="Limit processing to comma-separated list of track numbers (2,3,5)")
     parser.add_argument("-n", "--normalize", default=False, action="store_true",
                         help="Normalize volume of processed audio tracks (experimental)")
     a
@@ -202,10 +202,29 @@ def parse_args():
     return parser.parse_args()
 
 
+def parse_requested_track_nums(track_count, track_num_list):
+    if not track_num_list:
+        return range(track_count)
+
+    track_nums = []
+    for num in track_num_list.split(","):
+        try:
+            track_num = int(num)
+            if track_num < 1 or track_num > track_count:
+                print(f"Track number out of bounds: {track_num} Expected range: [1, {track_count}]")
+                return None
+
+            track_nums.append(track_num - 1) # We work with 0-based indices
+        except ValueError as e:
+            print(f"Invalid track number: {e}")
+            return None
+
+    return track_nums
+
+
 def main():
     args = parse_args()
     snipdata = parse_snipfile(args.snipfile)
-
 
     loudnormParams = None
     if args.normalize:
@@ -217,8 +236,12 @@ def main():
 
     metadata = snipdata["meta"]
     tracks = snipdata["tracks"]
-    track_count = args.limit if args.limit else len(tracks) - 1
-    for i in range(track_count):
+    track_count = len(tracks) - 1
+    requested_track_nums = parse_requested_track_nums(track_count, args.tracks)
+    if not requested_track_nums:
+        return
+
+    for i in requested_track_nums:
         track_num = i + 1
         padded_track_num = "{:02.0f}".format(track_num)
         start = tracks[i][0]
